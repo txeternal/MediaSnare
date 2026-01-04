@@ -1,0 +1,137 @@
+/* 基础容器与悬浮球保持你的知性深色调 */
+#video-floating-btn {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #2c3e50;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 2147483647; /* 提到最高层级，防止被遮挡 */
+  transition: all 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#video-floating-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 资源列表面板 - 增加 flex 布局以支持预览固定在顶部 */
+#video-resource-panel {
+  position: fixed;
+  left: 20px;
+  bottom: 90px;
+  width: 340px; /* 稍微加宽一点点 */
+  max-height: 500px;
+  background: #ffffff;
+  border-radius: 12px; /* 圆角更显知性 */
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  z-index: 2147483646;
+  overflow: hidden; /* 防止内部溢出 */
+  display: none;
+  flex-direction: column;
+}
+
+#video-resource-panel.visible {
+  display: flex; /* 改用 flex 布局 */
+}
+
+/* --- 新增：视频预览区域样式 --- */
+#video-preview-container {
+  width: 100%;
+  background: #000;
+  position: relative;
+  border-bottom: 2px solid #2c3e50;
+}
+
+#main-preview-video {
+  width: 100%;
+  max-height: 190px; /* 保持优雅的黄金比例 */
+  display: block;
+}
+
+#close-preview {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+#close-preview:hover {
+  background: #e74c3c;
+}
+
+/* 列表滚动区域 */
+.resource-list-container {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.panel-header {
+  padding: 12px;
+  background: #f8f9fa;
+  font-size: 14px;
+  font-weight: bold;
+  color: #2c3e50;
+  border-bottom: 1px solid #eee;
+}
+
+/* 资源项样式微调 */
+.resource-item {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.resource-item:hover {
+  background: #f1f4f6;
+}
+
+.resource-title {
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resource-info {
+  font-size: 11px;
+  color: #888;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 知性紫色的小下载按钮 */
+.mini-download-btn {
+  background: #8e44ad;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.2s;
+}
+
+.mini-download-btn:hover {
+  background: #7d3c9a;
+}
