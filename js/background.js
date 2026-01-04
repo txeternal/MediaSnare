@@ -7,7 +7,7 @@ const VIDEO_MIME_TYPES = new Set([
   'video/x-flv', 'video/webm', 'application/x-mpegurl', 'application/vnd.apple.mpegurl'
 ]);
 
-// 视频文件扩展名白名单
+
 const VIDEO_EXTENSIONS = new Set(['mp4', 'm3u8', 'webm', 'mov', 'flv', 'avi', 'mkv', 'ts']);
 
 // 拦截网络请求，检测视频资源

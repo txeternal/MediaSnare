@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "视频资源嗅探器",
   "version": "1.0.1",
-  "description": "检测网页视频资源并在左下角显示悬浮球，支持实时预览",
+  "description": "检测网页视频资源，支持实时预览",
   "permissions": [
     "webRequest",
     "storage",

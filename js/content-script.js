@@ -22,7 +22,7 @@ class VideoDetector {
 
   // 检测页面中的video标签
   detectVideoTags() {
-    const videos = document.querySelectorAll('video, audio');  // 包含audio以防遗漏
+    const videos = document.querySelectorAll('video, audio');  
     videos.forEach(video => {
       const sources = video.querySelectorAll('source');
       const urls = sources.length ? 

@@ -20,7 +20,7 @@ function getFileNameFromUrl(url) {
   return path.split('/').pop() || 'unknown-video';
 }
 
-// 暴露到全局，供其他脚本调用
+// 暴露到全局，其他脚本调用
 window.formatFileSize = formatFileSize;
 window.isVideoResource = isVideoResource;
 window.getFileNameFromUrl = getFileNameFromUrl;

@@ -33,7 +33,7 @@ class FloatingController {
     if (document.getElementById('video-resource-panel')) return;
     this.panel = document.createElement('div');
     this.panel.id = 'video-resource-panel';
-    // 增加预览区域 HTML
+    // 增加预览区域
     this.panel.innerHTML = `
       <div class="panel-header">嗅探到的资源</div>
       <div id="video-preview-container" style="display:none;">
