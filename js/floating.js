@@ -106,45 +106,45 @@ class FloatingController {
     const SEEK_TIME = 5;
 
     window.addEventListener('keydown', (e) => {
-        if (!this.artPlayerInstance) return;
-        if (e.code !== 'ArrowRight') return;
+      if (!this.artPlayerInstance) return;
+      if (e.code !== 'ArrowRight') return;
 
-        // 永远阻止原生行为
-        e.preventDefault();
-        e.stopPropagation();
+      // 永远阻止原生行为
+      e.preventDefault();
+      e.stopPropagation();
 
-        // 防止 keydown 连发
-        if (timer || isLongPressing) return;
+      // 防止 keydown 连发
+      if (timer || isLongPressing) return;
 
-        timer = setTimeout(() => {
-            isLongPressing = true;
-            lastRate = this.artPlayerInstance.playbackRate;
-            this.artPlayerInstance.playbackRate = speed;
-        }, 300);
+      timer = setTimeout(() => {
+        isLongPressing = true;
+        lastRate = this.artPlayerInstance.playbackRate;
+        this.artPlayerInstance.playbackRate = speed;
+      }, 300);
     }, true);
 
     window.addEventListener('keyup', (e) => {
-        if (e.code !== 'ArrowRight') return;
+      if (e.code !== 'ArrowRight') return;
 
-        e.preventDefault();
-        e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
 
-        clearTimeout(timer);
-        timer = null;
+      clearTimeout(timer);
+      timer = null;
 
-        // 如果不是长按，当作“短按”
-        if (!isLongPressing && this.artPlayerInstance) {
-            this.artPlayerInstance.currentTime += SEEK_TIME;
-            return;
-        }
+      // 如果不是长按，当作“短按”
+      if (!isLongPressing && this.artPlayerInstance) {
+        this.artPlayerInstance.currentTime += SEEK_TIME;
+        return;
+      }
 
-        // 长按结束，恢复倍速
-        if (isLongPressing && this.artPlayerInstance) {
-            this.artPlayerInstance.playbackRate = lastRate;
-            isLongPressing = false;
-        }
+      // 长按结束，恢复倍速
+      if (isLongPressing && this.artPlayerInstance) {
+        this.artPlayerInstance.playbackRate = lastRate;
+        isLongPressing = false;
+      }
     }, true);
-}
+  }
 
 
 
@@ -166,7 +166,7 @@ class FloatingController {
       theme: '#8e44ad',
       type: url.includes('m3u8') ? 'm3u8' : 'mp4',
       customType: {
-        m3u8: (video, url, art) => { 
+        m3u8: (video, url, art) => {
           if (Hls.isSupported()) {
             const hls = new Hls();
             hls.loadSource(url);
@@ -175,10 +175,26 @@ class FloatingController {
             // 当清单解析完成，提取分辨率层级
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
               if (hls.levels.length > 1) {
-                const quality = hls.levels.map((l, i) => ({
-                  html: `${l.height}P`,
-                  value: i,
-                }));
+                const quality = hls.levels.map((l, i) => {
+                  let name = '';
+                  if (l.height) {
+                    // 如果有高度信息，显示 1080P, 720P 等
+                    name = `${l.height}P`;
+                  } else if (l.bitrate) {
+                    // 如果没有高度，显示码率，比如 2.5 Mbps
+                    // bitrate 的单位是 bps，除以 1000000 换算成 Mbps
+                    const mbps = (l.bitrate / 1000000).toFixed(1);
+                    name = `${mbps} Mbps`;
+                  } else {
+                    // 万一啥都没有，就用索引保底
+                    name = `画质 ${i + 1}`;
+                  }
+
+                  return {
+                    html: name,
+                    value: i,
+                  };
+                });
                 quality.unshift({ html: '自动', value: -1 });
 
                 // 注入 ArtPlayer 的清晰度设置
@@ -195,7 +211,7 @@ class FloatingController {
                 });
               }
             });
-            this.hls = hls; 
+            this.hls = hls;
           } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = url;
           }
@@ -243,5 +259,6 @@ class FloatingController {
 }
 
 (() => {
+  if (window !== window.top) return;
   new FloatingController();
 })();

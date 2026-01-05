@@ -31,7 +31,7 @@
   position: fixed;
   left: 20px;
   bottom: 90px;
-  width: 350px;
+  width: 400px;
   max-height: 80vh; /* 最高占屏幕高度的 80%，防止超出屏幕 */
   background: white;
   border-radius: 12px;
@@ -44,12 +44,14 @@
   width: 100%;
   position: relative;
   background: #000;
-  flex-shrink: 0; /* 禁止被压缩，确保播放器高度固定 */
+  flex-shrink: 0;
 }
 
 #artplayer-container {
   width: 100%;
-  height: 200px; 
+   aspect-ratio: 16/9; /* 16:9 是视频常用比例 */
+  min-height: 200px; /* 最小高度保底 */
+  display: block;
 }
 
 #video-resource-panel.visible {
