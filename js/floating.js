@@ -161,15 +161,41 @@ class FloatingController {
 
     this.artPlayerInstance = new Artplayer({
       container: container,
+      autoplay: true,
       url: url,
       theme: '#8e44ad',
       type: url.includes('m3u8') ? 'm3u8' : 'mp4',
       customType: {
-        m3u8: function (video, url) {
+        m3u8: (video, url, art) => { 
           if (Hls.isSupported()) {
             const hls = new Hls();
             hls.loadSource(url);
             hls.attachMedia(video);
+
+            // 当清单解析完成，提取分辨率层级
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (hls.levels.length > 1) {
+                const quality = hls.levels.map((l, i) => ({
+                  html: `${l.height}P`,
+                  value: i,
+                }));
+                quality.unshift({ html: '自动', value: -1 });
+
+                // 注入 ArtPlayer 的清晰度设置
+                art.setting.update({
+                  name: 'quality',
+                  width: 100,
+                  html: '清晰度',
+                  selector: quality,
+                  onSelect: (item) => {
+                    hls.currentLevel = item.value;
+                    art.notice.show = `正在切换至 ${item.html}`;
+                    return item.html;
+                  },
+                });
+              }
+            });
+            this.hls = hls; 
           } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = url;
           }
@@ -184,10 +210,6 @@ class FloatingController {
       autoSize: true,     // 自动适配容器大小
     });
 
-
-    this.artPlayerInstance.on('ready', () => {
-      this.artPlayerInstance.play();
-    });
   }
 
   showFloatingButton() {
