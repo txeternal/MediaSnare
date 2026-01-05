@@ -5,6 +5,7 @@ class FloatingController {
     this.videoResources = [];
     this.hls = null; // 存储 Hls 实例，方便销毁
     this.artPlayerInstance = null;
+    this.initKeyboardLongPress();
     this.init().catch(err => console.error('Floating init error:', err));
   }
 
@@ -21,7 +22,6 @@ class FloatingController {
     if (document.getElementById('video-floating-btn')) return;
     this.btn = document.createElement('div');
     this.btn.id = 'video-floating-btn';
-    // 换一个更有“侦探”感觉的图标
     this.btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>';
     document.body.appendChild(this.btn);
 
@@ -34,8 +34,8 @@ class FloatingController {
     if (document.getElementById('video-resource-panel')) return;
     this.panel = document.createElement('div');
     this.panel.id = 'video-resource-panel';
-    
-    // 这里我们把播放器和列表分开，用一个 wrapper 撑开
+
+    // 把播放器和列表分开，用一个 wrapper 撑开
     this.panel.innerHTML = `
       <div class="panel-header">嗅探到的资源</div>
       <div id="preview-wrapper" style="display:none;">
@@ -53,7 +53,7 @@ class FloatingController {
         this.artPlayerInstance = null;
       }
     };
-}
+  }
 
   listenResourceUpdates() {
     window.addEventListener('message', (event) => {
@@ -97,9 +97,59 @@ class FloatingController {
       });
     });
   }
+  // 长按倍速
+  initKeyboardLongPress() {
+    let timer = null;
+    let isLongPressing = false;
+    let lastRate = 1.0;
+    const speed = 2.0;
+    const SEEK_TIME = 5;
 
-  // --- 新增：预览核心逻辑 ---
-  // 在 FloatingController 的 previewVideo 方法中
+    window.addEventListener('keydown', (e) => {
+        if (!this.artPlayerInstance) return;
+        if (e.code !== 'ArrowRight') return;
+
+        // 永远阻止原生行为
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 防止 keydown 连发
+        if (timer || isLongPressing) return;
+
+        timer = setTimeout(() => {
+            isLongPressing = true;
+            lastRate = this.artPlayerInstance.playbackRate;
+            this.artPlayerInstance.playbackRate = speed;
+        }, 300);
+    }, true);
+
+    window.addEventListener('keyup', (e) => {
+        if (e.code !== 'ArrowRight') return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        clearTimeout(timer);
+        timer = null;
+
+        // 如果不是长按，当作“短按”
+        if (!isLongPressing && this.artPlayerInstance) {
+            this.artPlayerInstance.currentTime += SEEK_TIME;
+            return;
+        }
+
+        // 长按结束，恢复倍速
+        if (isLongPressing && this.artPlayerInstance) {
+            this.artPlayerInstance.playbackRate = lastRate;
+            isLongPressing = false;
+        }
+    }, true);
+}
+
+
+
+
+  // 预览核心逻辑
   previewVideo(url) {
     const wrapper = document.getElementById('preview-wrapper');
     const container = document.getElementById('artplayer-container');
@@ -109,11 +159,10 @@ class FloatingController {
       this.artPlayerInstance.destroy();
     }
 
-    // 初始化 ArtPlayer
     this.artPlayerInstance = new Artplayer({
       container: container,
       url: url,
-      theme: '#8e44ad', // 这里的紫色要和你的下载按钮呼应哦
+      theme: '#8e44ad',
       type: url.includes('m3u8') ? 'm3u8' : 'mp4',
       customType: {
         m3u8: function (video, url) {
@@ -126,18 +175,17 @@ class FloatingController {
           }
         }
       },
-      // --- 最高难度：全功能开启 ---
       setting: true,      // 允许用户自己调速、选比例
       playbackRate: true, // 开启倍速播放
-      pip: true,          // 开启画中画（一边刷网页一边看小窗）
+      pip: true,          // 开启画中画
       fullscreen: true,   // 全屏显示
       miniProgressBar: true, // 面板太小时显示迷你进度条
       lock: true,         // 锁定画面
       autoSize: true,     // 自动适配容器大小
     });
 
+
     this.artPlayerInstance.on('ready', () => {
-      console.log('知性播放器准备就绪！');
       this.artPlayerInstance.play();
     });
   }

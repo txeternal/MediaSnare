@@ -1,4 +1,4 @@
-/* 基础容器与悬浮球保持你的知性深色调 */
+/* 基础容器与悬浮球 */
 #video-floating-btn {
   position: fixed;
   left: 20px;
@@ -49,11 +49,11 @@
 
 #artplayer-container {
   width: 100%;
-  height: 200px; /* 给一个明确的高度 */
+  height: 200px; 
 }
 
 #video-resource-panel.visible {
-  display: flex; /* 改用 flex 布局 */
+  display: flex; 
 }
 
 /* --- 新增：视频预览区域样式 --- */
@@ -132,7 +132,6 @@
   align-items: center;
 }
 
-/* 知性紫色的小下载按钮 */
 .mini-download-btn {
   background: #8e44ad;
   color: white;
@@ -146,4 +145,30 @@
 
 .mini-download-btn:hover {
   background: #7d3c9a;
+}
+
+#speed-tip {
+    position: absolute;
+    top: 15%; /* 放在偏上方，不挡字幕 */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.5); /* 半透明黑 */
+    color: #fff;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    display: none; 
+    align-items: center;
+    pointer-events: none; 
+    z-index: 1000;
+    backdrop-filter: blur(4px); 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#speed-tip::before {
+    content: "倍速播放中";
+    margin-right: 8px;
+    color: #8e44ad; 
+    letter-spacing: -2px;
 }
