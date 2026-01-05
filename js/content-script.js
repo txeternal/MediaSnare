@@ -6,9 +6,7 @@ class VideoDetector {
   }
 
   init() {
-    // 立即检测现有视频标签
     this.detectVideoTags();
-    // 监听DOM变化（延迟执行，确保页面加载完成）
     setTimeout(() => this.observeDOMChanges(), 1000);
     // 请求background中已拦截的资源
     this.requestBackgroundResources();

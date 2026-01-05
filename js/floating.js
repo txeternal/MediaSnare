@@ -181,8 +181,7 @@ class FloatingController {
                     // 如果有高度信息，显示 1080P, 720P 等
                     name = `${l.height}P`;
                   } else if (l.bitrate) {
-                    // 如果没有高度，显示码率，比如 2.5 Mbps
-                    // bitrate 的单位是 bps，除以 1000000 换算成 Mbps
+                    // 如果没有高度，显示码率
                     const mbps = (l.bitrate / 1000000).toFixed(1);
                     name = `${mbps} Mbps`;
                   } else {

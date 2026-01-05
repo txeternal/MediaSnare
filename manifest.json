@@ -6,6 +6,7 @@
   "permissions": [
     "webRequest",
     "storage",
+    "tabs",
     "activeTab",
     "declarativeNetRequest"
   ],
@@ -35,6 +36,7 @@
     }
   ],
   "action": {
+    "default_popup": "popup.html",
     "default_title": "查看已捕获资源"
   }
 }

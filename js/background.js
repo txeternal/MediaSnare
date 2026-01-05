@@ -1,3 +1,21 @@
+// 在 Background.js 开头加入
+let pausedHosts = [];
+let isPausedAll = false;
+
+// 初始化时从本地存储同步一下状态
+chrome.storage.local.get(['pausedHosts', 'isPausedAll'], (data) => {
+  pausedHosts = data.pausedHosts || [];
+  isPausedAll = data.isPausedAll || false;
+});
+
+// 监听 storage 变化，实时更新 background 变量
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.pausedHosts) pausedHosts = changes.pausedHosts.newValue;
+  if (changes.isPausedAll) isPausedAll = changes.isPausedAll.newValue;
+});
+
+
+
 // ================== 资源存储（按 tabId 分组） ==================
 const videoResources = new Map();
 
@@ -17,10 +35,24 @@ const VIDEO_EXTENSIONS = new Set([
 
 // ================== 请求拦截 ==================
 chrome.webRequest.onHeadersReceived.addListener(
-  (details) => {
+  async (details) => {
     const { tabId, url, responseHeaders } = details;
     if (tabId === -1) return;
+    if (isPausedAll) return;
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    if (!tab?.url) return;
 
+    let pageHost;
+    try {
+      pageHost = new URL(tab.url).hostname;
+    } catch {
+      return;
+    }
+
+    if (pausedHosts.includes(pageHost)) {
+      console.log('本站点已暂停嗅探:', pageHost);
+      return;
+    }
     let mimeType = '';
     let size = 0;
 
@@ -85,7 +117,7 @@ chrome.webRequest.onHeadersReceived.addListener(
       chrome.tabs.sendMessage(tabId, {
         type: 'NEW_VIDEO_RESOURCE',
         resource
-      }).catch(() => {});
+      }).catch(() => { });
       return;
     }
 
@@ -107,7 +139,7 @@ chrome.webRequest.onHeadersReceived.addListener(
       chrome.tabs.sendMessage(tabId, {
         type: 'NEW_VIDEO_RESOURCE',
         resource
-      }).catch(() => {});
+      }).catch(() => { });
     }
   },
   { urls: ['<all_urls>'] },
@@ -121,6 +153,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 // ================== content-script 主动请求 ==================
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+
   if (msg.type === 'GET_VIDEO_RESOURCES' && sender.tab?.id !== undefined) {
     sendResponse({
       resources: videoResources.get(sender.tab.id) || []
