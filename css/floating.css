@@ -26,18 +26,30 @@
 
 /* 资源列表面板 - 增加 flex 布局以支持预览固定在顶部 */
 #video-resource-panel {
+  display: none; /* 初始隐藏 */
+  flex-direction: column; /* 垂直排列 */
   position: fixed;
   left: 20px;
   bottom: 90px;
-  width: 340px; /* 稍微加宽一点点 */
-  max-height: 500px;
-  background: #ffffff;
-  border-radius: 12px; /* 圆角更显知性 */
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-  z-index: 2147483646;
-  overflow: hidden; /* 防止内部溢出 */
-  display: none;
-  flex-direction: column;
+  width: 350px;
+  max-height: 80vh; /* 最高占屏幕高度的 80%，防止超出屏幕 */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  z-index: 99998;
+  overflow: hidden;
+}
+
+#preview-wrapper {
+  width: 100%;
+  position: relative;
+  background: #000;
+  flex-shrink: 0; /* 禁止被压缩，确保播放器高度固定 */
+}
+
+#artplayer-container {
+  width: 100%;
+  height: 200px; /* 给一个明确的高度 */
 }
 
 #video-resource-panel.visible {
@@ -80,15 +92,14 @@
 .resource-list-container {
   overflow-y: auto;
   flex: 1;
+  border-top: 1px solid #eee;
 }
 
 .panel-header {
-  padding: 12px;
-  background: #f8f9fa;
-  font-size: 14px;
+  padding: 10px 15px;
   font-weight: bold;
-  color: #2c3e50;
-  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+  flex-shrink: 0;
 }
 
  

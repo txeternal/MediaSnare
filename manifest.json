@@ -18,6 +18,7 @@
       "matches": ["<all_urls>"],
       "js": [
         "lib/hls.min.js", 
+        "lib/artplayer.js",
         "js/utils.js", 
         "js/floating.js", 
         "js/content-script.js"

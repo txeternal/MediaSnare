@@ -4,6 +4,7 @@ class FloatingController {
     this.panel = null;
     this.videoResources = [];
     this.hls = null; // 存储 Hls 实例，方便销毁
+    this.artPlayerInstance = null;
     this.init().catch(err => console.error('Floating init error:', err));
   }
 
@@ -33,29 +34,26 @@ class FloatingController {
     if (document.getElementById('video-resource-panel')) return;
     this.panel = document.createElement('div');
     this.panel.id = 'video-resource-panel';
-    // 增加预览区域
+    
+    // 这里我们把播放器和列表分开，用一个 wrapper 撑开
     this.panel.innerHTML = `
       <div class="panel-header">嗅探到的资源</div>
-      <div id="video-preview-container" style="display:none;">
-        <video id="main-preview-video" controls></video>
+      <div id="preview-wrapper" style="display:none;">
+        <div id="artplayer-container"></div> 
         <div id="close-preview">关闭预览 ×</div>
       </div>
       <div class="resource-list-container"></div>
     `;
     document.body.appendChild(this.panel);
 
-    // 预览关闭逻辑
     this.panel.querySelector('#close-preview').onclick = () => {
-      const container = document.getElementById('video-preview-container');
-      container.style.display = 'none';
-      const video = document.getElementById('main-preview-video');
-      video.pause();
-      if (this.hls) {
-        this.hls.destroy();
-        this.hls = null;
+      document.getElementById('preview-wrapper').style.display = 'none';
+      if (this.artPlayerInstance) {
+        this.artPlayerInstance.destroy();
+        this.artPlayerInstance = null;
       }
     };
-  }
+}
 
   listenResourceUpdates() {
     window.addEventListener('message', (event) => {
@@ -101,35 +99,52 @@ class FloatingController {
   }
 
   // --- 新增：预览核心逻辑 ---
+  // 在 FloatingController 的 previewVideo 方法中
   previewVideo(url) {
-    const container = document.getElementById('video-preview-container');
-    const video = document.getElementById('main-preview-video');
-    container.style.display = 'block';
+    const wrapper = document.getElementById('preview-wrapper');
+    const container = document.getElementById('artplayer-container');
+    wrapper.style.display = 'block'; // 显示外层包裹框
 
-    // 如果之前有 HLS 实例，先销毁
-    if (this.hls) {
-      this.hls.destroy();
-      this.hls = null;
+    if (this.artPlayerInstance) {
+      this.artPlayerInstance.destroy();
     }
 
-    if (url.includes('.m3u8')) {
-      if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-        this.hls = new Hls();
-        this.hls.loadSource(url);
-        this.hls.attachMedia(video);
-        this.hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-      } else {
-        alert('当前环境不支持 M3U8 播放');
-      }
-    } else {
-      video.src = url;
-      video.play();
-    }
+    // 初始化 ArtPlayer
+    this.artPlayerInstance = new Artplayer({
+      container: container,
+      url: url,
+      theme: '#8e44ad', // 这里的紫色要和你的下载按钮呼应哦
+      type: url.includes('m3u8') ? 'm3u8' : 'mp4',
+      customType: {
+        m3u8: function (video, url) {
+          if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+          }
+        }
+      },
+      // --- 最高难度：全功能开启 ---
+      setting: true,      // 允许用户自己调速、选比例
+      playbackRate: true, // 开启倍速播放
+      pip: true,          // 开启画中画（一边刷网页一边看小窗）
+      fullscreen: true,   // 全屏显示
+      miniProgressBar: true, // 面板太小时显示迷你进度条
+      lock: true,         // 锁定画面
+      autoSize: true,     // 自动适配容器大小
+    });
+
+    this.artPlayerInstance.on('ready', () => {
+      console.log('知性播放器准备就绪！');
+      this.artPlayerInstance.play();
+    });
   }
 
   showFloatingButton() {
     this.btn.classList.add('visible');
-    this.btn.offsetHeight; 
+    this.btn.offsetHeight;
   }
 
   downloadResource(url) {
@@ -151,9 +166,9 @@ class FloatingController {
 
   getFileNameFromUrl(url) {
     try {
-        const path = new URL(url).pathname;
-        return path.split('/').pop() || 'video-file';
-    } catch(e) { return 'video-file'; }
+      const path = new URL(url).pathname;
+      return path.split('/').pop() || 'video-file';
+    } catch (e) { return 'video-file'; }
   }
 }
 
