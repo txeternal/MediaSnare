@@ -1,64 +1,129 @@
-// 存储检测到的视频资源（按标签页ID分类）
+// ================== 资源存储（按 tabId 分组） ==================
 const videoResources = new Map();
 
-// 视频MIME类型白名单（补充常见格式）
+// ================== MIME & 扩展名 ==================
 const VIDEO_MIME_TYPES = new Set([
-  'video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo',
-  'video/x-flv', 'video/webm', 'application/x-mpegurl', 'application/vnd.apple.mpegurl'
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-msvideo',
+  'video/x-flv',
+  'video/mpeg'
 ]);
 
+const VIDEO_EXTENSIONS = new Set([
+  'mp4', 'webm', 'mov', 'avi', 'flv', 'mkv'
+]);
 
-const VIDEO_EXTENSIONS = new Set(['mp4', 'm3u8', 'webm', 'mov', 'flv', 'avi', 'mkv', 'ts']);
-
-// 拦截网络请求，检测视频资源
+// ================== 请求拦截 ==================
 chrome.webRequest.onHeadersReceived.addListener(
   (details) => {
-    const { tabId, url, responseHeaders, type } = details;
-    if (tabId === -1) return;  // 忽略非标签页请求
+    const { tabId, url, responseHeaders } = details;
+    if (tabId === -1) return;
 
-    // 从响应头获取MIME类型
-    const contentTypeHeader = responseHeaders?.find(h => h.name.toLowerCase() === 'content-type');
-    const mimeType = contentTypeHeader?.value?.split(';')[0] || '';
+    let mimeType = '';
+    let size = 0;
 
-    // 从URL提取扩展名
-    const urlObj = new URL(url);
-    const ext = urlObj.pathname.split('.').pop()?.toLowerCase() || '';
+    for (const h of responseHeaders || []) {
+      const name = h.name.toLowerCase();
+      if (name === 'content-type') {
+        mimeType = h.value.split(';')[0];
+      }
+      if (name === 'content-length') {
+        size = parseInt(h.value, 10) || 0;
+      }
+    }
 
-    // 双重验证：MIME类型或扩展名匹配视频格式
-    const isVideo = VIDEO_MIME_TYPES.has(mimeType) || VIDEO_EXTENSIONS.has(ext);
-    if (!isVideo) return;
+    let ext = '';
+    try {
+      ext = new URL(url).pathname.split('.').pop().toLowerCase();
+    } catch {
+      return;
+    }
 
-    // 获取文件大小
-    const contentLengthHeader = responseHeaders?.find(h => h.name.toLowerCase() === 'content-length');
-    const size = contentLengthHeader ? parseInt(contentLengthHeader.value) : 0;
+    // ================== 类型判断 ==================
+    const isM3U8 =
+      ext === 'm3u8' ||
+      mimeType === 'application/x-mpegurl' ||
+      mimeType === 'application/vnd.apple.mpegurl';
 
-    // 存储资源（按tabId分组）
+    const isTS =
+      ext === 'ts' ||
+      mimeType === 'video/mp2t';
+
+    const isNormalVideo =
+      !isM3U8 &&
+      !isTS &&
+      (VIDEO_MIME_TYPES.has(mimeType) || VIDEO_EXTENSIONS.has(ext));
+
+    // ================== ts：直接忽略 ==================
+    if (isTS) {
+      return;
+    }
+
     if (!videoResources.has(tabId)) {
       videoResources.set(tabId, []);
     }
+
     const resources = videoResources.get(tabId);
-    if (!resources.some(r => r.url === url)) {
-      const newResource = { url, type: mimeType, size };
-      resources.push(newResource);
-      // 主动通知当前标签页的content-script
+
+    // ================== m3u8：单独标记 ==================
+    if (isM3U8) {
+      if (resources.some(r => r.isM3U8 && r.url === url)) return;
+
+      const resource = {
+        url,
+        ext: 'm3u8',
+        mimeType,
+        size: 0,
+        isM3U8: true,
+        category: 'hls'
+      };
+
+      resources.push(resource);
+
       chrome.tabs.sendMessage(tabId, {
         type: 'NEW_VIDEO_RESOURCE',
-        resource: newResource
-      }).catch(() => {});  // 忽略标签页未加载完成的错误
+        resource
+      }).catch(() => {});
+      return;
+    }
+
+    // ================== 普通视频 ==================
+    if (isNormalVideo) {
+      if (resources.some(r => r.url === url)) return;
+
+      const resource = {
+        url,
+        ext,
+        mimeType,
+        size,
+        isM3U8: false,
+        category: 'file'
+      };
+
+      resources.push(resource);
+
+      chrome.tabs.sendMessage(tabId, {
+        type: 'NEW_VIDEO_RESOURCE',
+        resource
+      }).catch(() => {});
     }
   },
-  { urls: ['<all_urls>'], types: ['xmlhttprequest', 'media', 'other', 'script'] },  // 扩展类型
-  ['responseHeaders', 'extraHeaders']  // 确保能获取完整响应头
+  { urls: ['<all_urls>'] },
+  ['responseHeaders', 'extraHeaders']
 );
 
-// 监听标签页关闭，清理资源
+// ================== tab 关闭清理 ==================
 chrome.tabs.onRemoved.addListener((tabId) => {
   videoResources.delete(tabId);
 });
 
-// 响应content-script的资源请求
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'GET_VIDEO_RESOURCES' && sender.tab?.id) {
-    sendResponse({ resources: videoResources.get(sender.tab.id) || [] });
+// ================== content-script 主动请求 ==================
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'GET_VIDEO_RESOURCES' && sender.tab?.id !== undefined) {
+    sendResponse({
+      resources: videoResources.get(sender.tab.id) || []
+    });
   }
 });
