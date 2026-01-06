@@ -56,5 +56,7 @@
 * [ArtPlayer](https://github.com/zhw2590582/ArtPlayer)
 * 感谢所有对 Web 媒体加载机制进行研究与分享的开发者
 
-
 ---
+
+## License
+MIT License
