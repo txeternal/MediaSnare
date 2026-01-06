@@ -53,6 +53,7 @@ chrome.webRequest.onHeadersReceived.addListener(
       console.log('本站点已暂停嗅探:', pageHost);
       return;
     }
+    
     let mimeType = '';
     let size = 0;
 
@@ -158,5 +159,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({
       resources: videoResources.get(sender.tab.id) || []
     });
+  }
+});
+
+// 监听popup发送的状态变化消息，广播给所有标签页
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'STATE_CHANGED') {
+    // 通知所有标签页的content-script更新暂停状态
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'PAUSE_STATE_CHANGED',
+          isPausedAll: msg.isPausedAll,
+          pausedHosts: pausedHosts // 同步最新的暂停站点列表
+        }).catch(() => {});
+      });
+    });
+    sendResponse({ success: true });
   }
 });

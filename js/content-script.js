@@ -1,23 +1,68 @@
+// content-scripts.js 
 // 检测页面中的视频资源
 class VideoDetector {
   constructor() {
     this.detectedUrls = new Set();
+    this.isPaused = false; // 新增：当前是否暂停检测
+    this.currentHost = '';
     this.init();
   }
 
   init() {
-    this.detectVideoTags();
-    setTimeout(() => this.observeDOMChanges(), 1000);
-    // 请求background中已拦截的资源
-    this.requestBackgroundResources();
-    // 监听来自background的新资源通知
+    try {
+      this.currentHost = new URL(window.location.href).hostname;
+    } catch (e) {
+      this.isPaused = true;
+      return;
+    }
+
+    // 初始化时检查暂停状态
+    this.checkPauseState();
     chrome.runtime.onMessage.addListener((message) => {
+      if (message.type === 'PAUSE_STATE_CHANGED') {
+        this.updatePauseState(message);
+      }
+    });
+
+    if (!this.isPaused) {
+      this.detectVideoTags();
+      setTimeout(() => this.observeDOMChanges(), 1000);
+      this.requestBackgroundResources();
+    }
+
+    // 监听来自background的新资源通知（添加暂停判断）
+    chrome.runtime.onMessage.addListener((message) => {
+      if (this.isPaused) return; // 暂停时忽略
       if (message.type === 'NEW_VIDEO_RESOURCE') {
         this.handleNewResource(message.resource);
       }
     });
   }
+checkPauseState() {
+    chrome.storage.local.get(['pausedHosts', 'isPausedAll'], (data) => {
+      const pausedHosts = data.pausedHosts || [];
+      const isPausedAll = data.isPausedAll || false;
+      // 全局暂停 或 本站点暂停 → 标记为暂停
+      this.isPaused = isPausedAll || pausedHosts.includes(this.currentHost);
+    });
+  }
 
+  // 新增：更新暂停状态
+  updatePauseState(message) {
+    const { pausedHosts = [], isPausedAll = false } = message;
+    this.isPaused = isPausedAll || pausedHosts.includes(this.currentHost);
+    
+    if (this.isPaused) {
+      // 暂停：清空已检测的资源，停止发送消息
+      this.detectedUrls.clear();
+      console.log(`[视频检测] 已暂停 ${this.currentHost} 的资源检测`);
+    } else {
+      // 恢复：重新检测
+      console.log(`[视频检测] 已恢复 ${this.currentHost} 的资源检测`);
+      this.detectVideoTags();
+      this.requestBackgroundResources();
+    }
+  }
   // 检测页面中的video标签
   detectVideoTags() {
     const videos = document.querySelectorAll('video, audio');  
@@ -37,9 +82,9 @@ class VideoDetector {
 
   // 处理新资源
   handleNewResource(resource) {
+    if (this.isPaused) return; // 暂停时不处理
     if (this.detectedUrls.has(resource.url)) return;
     this.detectedUrls.add(resource.url);
-    // 发送给悬浮球
     window.postMessage({
       type: 'NEW_VIDEO_RESOURCE',
       resource: resource

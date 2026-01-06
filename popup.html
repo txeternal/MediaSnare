@@ -1,125 +1,118 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>视频监控控制</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-        }
+  <meta charset="UTF-8" />
+  <title>视频嗅探器</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+        sans-serif;
+    }
 
-        body {
-            width: 280px;          
-            padding: 16px;        
-            background-color: #f8f9fa; 
-            color: #212529;        
-        }
+    body {
+      margin: 0;
+      padding: 12px;
+      width: 220px;
+      background: #f9f9fb;
+      color: #333;
+    }
 
-        /* 菜单容器 */
-        .menu-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px; 
-        }
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-        /* 菜单选项 */
-        .menu-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between; 
-            padding: 10px 12px;
-            background-color: white;
-            border-radius: 8px;            
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-            transition: all 0.2s ease;     
-        }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
 
+    .menu-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
 
-        .menu-item:hover {
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            transform: translateY(-1px);   /* 轻微上浮 */
-        }
+    .menu-item span {
+      font-size: 14px;
+      user-select: none;
+    }
 
-        .menu-item span {
-            font-size: 14px;
-            font-weight: 500;
-            color: #333;
-        }
+    /* ===== Switch ===== */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 22px;
+      flex-shrink: 0;
+    }
 
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
 
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;         
-            height: 24px;        
-        }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #dcdcdc;
+      border-radius: 22px;
+      transition: background-color 0.25s ease;
+    }
 
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
+    .slider::before {
+      content: "";
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      top: 2px;
+      background-color: #fff;
+      border-radius: 50%;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
 
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #e0e0e0; 
-            transition: .3s ease;
-            border-radius: 24px;       
-        }
+    input:checked + .slider {
+      background-color: #8e44ad;
+    }
 
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;            
-            width: 20px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .3s ease;
-            border-radius: 50%;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2); 
-        }
-
-        input:checked + .slider {
-            background-color: #8e44ad;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(20px); 
-        }
-
-        .switch input:focus + .slider {
-            box-shadow: 0 0 0 2px rgba(142, 68, 173, 0.2);
-        }
-    </style>
+    input:checked + .slider::before {
+      transform: translateX(20px);
+      box-shadow: 0 2px 6px rgba(142, 68, 173, 0.6);
+    }
+  </style>
 </head>
+
 <body>
-    <div class="menu-container">
-        <div class="menu-item">
-            <span>在此站点暂停</span>
-            <label class="switch">
-                <input type="checkbox" id="pause-this-tab">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="menu-item">
-            <span>在所有站点暂停</span>
-            <label class="switch">
-                <input type="checkbox" id="pause-all-tabs">
-                <span class="slider"></span>
-            </label>
-        </div>
+  <div class="menu">
+    <div class="menu-item">
+      <span>在此站点暂停</span>
+      <label class="switch">
+        <input type="checkbox" id="pause-this-tab" />
+        <span class="slider"></span>
+      </label>
     </div>
 
-    <script src="js/popup.js"></script>
+    <div class="menu-item">
+      <span>在所有站点暂停</span>
+      <label class="switch">
+        <input type="checkbox" id="pause-all-tabs" />
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <script src="js/popup.js"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+// 这是floating.js 
 class FloatingController {
   constructor() {
     this.btn = null;
@@ -48,6 +49,10 @@ class FloatingController {
 
     this.panel.querySelector('#close-preview').onclick = () => {
       document.getElementById('preview-wrapper').style.display = 'none';
+      if (this.hls) {
+        this.hls.destroy();
+        this.hls = null;
+      }
       if (this.artPlayerInstance) {
         this.artPlayerInstance.destroy();
         this.artPlayerInstance = null;
@@ -123,7 +128,7 @@ class FloatingController {
 
     const keyupHandler = (e) => {
       if (e.code !== 'ArrowRight') return;
-      
+
       // 如果预览窗开着，同样要阻止原网页行为
       if (wrapper.style.display !== 'none') {
         e.preventDefault();
@@ -160,6 +165,10 @@ class FloatingController {
 
   // 预览核心逻辑
   previewVideo(url) {
+    if (this.hls) {
+      this.hls.destroy();
+      this.hls = null;
+    }
     const wrapper = document.getElementById('preview-wrapper');
     const container = document.getElementById('artplayer-container');
     wrapper.style.display = 'block'; // 显示外层包裹框
@@ -233,7 +242,7 @@ class FloatingController {
       lock: true,         // 锁定画面
       autoSize: true,     // 自动适配容器大小
     });
-this.initArtLongPress(this.artPlayerInstance, wrapper);
+    this.initArtLongPress(this.artPlayerInstance, wrapper);
   }
 
   showFloatingButton() {

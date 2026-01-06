@@ -25,7 +25,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 pausedHosts = pausedHosts.filter(h => h !== url);
             }
             chrome.storage.local.set({ pausedHosts }, () => {
-                chrome.tabs.reload(tab.id); 
+                chrome.tabs.sendMessage(tab.id, { 
+                  type: 'PAUSE_STATE_CHANGED',
+                  pausedHosts,
+                  isPausedAll: pauseAllTabsImg.checked
+                }).catch(() => {});
             });
         });
     };
@@ -34,6 +38,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     pauseAllTabsImg.onchange = () => {
         chrome.storage.local.set({ isPausedAll: pauseAllTabsImg.checked }, () => {
             chrome.runtime.sendMessage({ type: 'STATE_CHANGED' });
+            chrome.tabs.query({}, (tabs) => {
+                tabs.forEach(t => {
+                    chrome.tabs.sendMessage(t.id, { 
+                      type: 'PAUSE_STATE_CHANGED',
+                      isPausedAll
+                    }).catch(() => {});
+                });
+            });
         });
     };
 });
