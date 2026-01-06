@@ -5,7 +5,7 @@ class FloatingController {
     this.videoResources = [];
     this.hls = null; // 存储 Hls 实例，方便销毁
     this.artPlayerInstance = null;
-    this.initKeyboardLongPress();
+    // this.initKeyboardLongPress();
     this.init().catch(err => console.error('Floating init error:', err));
   }
 
@@ -98,52 +98,61 @@ class FloatingController {
     });
   }
   // 长按倍速
-  initKeyboardLongPress() {
+  initArtLongPress(art, wrapper) {
     let timer = null;
     let isLongPressing = false;
     let lastRate = 1.0;
-    const speed = 2.0;
-    const SEEK_TIME = 5;
+    const SPEED = 2.0;
 
-    window.addEventListener('keydown', (e) => {
-      if (!this.artPlayerInstance) return;
-      if (e.code !== 'ArrowRight') return;
+    const keydownHandler = (e) => {
+      if (e.code !== 'ArrowRight' || wrapper.style.display === 'none') return;
 
-      // 永远阻止原生行为
+      // 阻止原网页视频快进
       e.preventDefault();
-      e.stopPropagation();
+      e.stopImmediatePropagation();
 
-      // 防止 keydown 连发
       if (timer || isLongPressing) return;
 
       timer = setTimeout(() => {
         isLongPressing = true;
-        lastRate = this.artPlayerInstance.playbackRate;
-        this.artPlayerInstance.playbackRate = speed;
+        lastRate = art.playbackRate; // 记录之前的倍速
+        art.playbackRate = SPEED;    // 使用 ArtPlayer API 改变倍速
+        art.notice.show = `长按倍速中：${SPEED}x`; // 调用 Art 通知 UI
       }, 300);
-    }, true);
+    };
 
-    window.addEventListener('keyup', (e) => {
+    const keyupHandler = (e) => {
       if (e.code !== 'ArrowRight') return;
-
-      e.preventDefault();
-      e.stopPropagation();
+      
+      // 如果预览窗开着，同样要阻止原网页行为
+      if (wrapper.style.display !== 'none') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
 
       clearTimeout(timer);
       timer = null;
 
-      // 如果不是长按，当作“短按”
-      if (!isLongPressing && this.artPlayerInstance) {
-        this.artPlayerInstance.currentTime += SEEK_TIME;
-        return;
-      }
-
-      // 长按结束，恢复倍速
-      if (isLongPressing && this.artPlayerInstance) {
-        this.artPlayerInstance.playbackRate = lastRate;
+      if (isLongPressing) {
+        art.playbackRate = lastRate;
+        art.notice.show = `恢复原速：${lastRate}x`;
         isLongPressing = false;
+      } else {
+        // 短按逻辑：快进 5s
+        art.currentTime += 5;
+        art.notice.show = '快进 5s';
       }
-    }, true);
+    };
+
+    //使用捕获模式确保我们比原网页更快拿到按键信号
+    document.addEventListener('keydown', keydownHandler, true);
+    document.addEventListener('keyup', keyupHandler, true);
+
+    // 当播放器销毁时，自动移除 document 上的监听器
+    art.on('destroy', () => {
+      document.removeEventListener('keydown', keydownHandler, true);
+      document.removeEventListener('keyup', keyupHandler, true);
+    });
   }
 
 
@@ -224,7 +233,7 @@ class FloatingController {
       lock: true,         // 锁定画面
       autoSize: true,     // 自动适配容器大小
     });
-
+this.initArtLongPress(this.artPlayerInstance, wrapper);
   }
 
   showFloatingButton() {
