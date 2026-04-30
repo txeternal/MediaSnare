@@ -1,0 +1,405 @@
+/* 弥散光背景动画 */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes floating {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 4px 20px rgba(23, 160, 184, 0.4), 0 0 30px rgba(23, 160, 184, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 4px 30px rgba(23, 160, 184, 0.6), 0 0 50px rgba(23, 160, 184, 0.3);
+  }
+}
+
+/* 基础容器与悬浮球 */
+#video-floating-btn {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  top: auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 25%, #f5f7fa 50%, #a1c4fd 75%, #fef9d7 100%);
+  background-size: 200% 200%;
+  color: #5a6c7d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 2147483647;
+  opacity: 0;
+  pointer-events: none;
+  animation: gradient-shift 10s ease infinite;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
+#video-floating-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#video-floating-btn.dragging {
+  cursor: grabbing;
+  transform: scale(1.05);
+  box-shadow: 0 12px 40px rgba(23, 160, 184, 0.5),
+    0 0 60px rgba(26, 188, 156, 0.3),
+    inset 0 -2px 10px rgba(0, 0, 0, 0.2);
+  animation: none;
+}
+
+#video-floating-btn:hover:not(.dragging) {
+  transform: scale(1.08);
+  box-shadow: 0 8px 32px rgba(23, 160, 184, 0.4),
+    0 0 40px rgba(26, 188, 156, 0.2),
+    inset 0 -2px 10px rgba(0, 0, 0, 0.2);
+  animation: gradient-shift 3s ease infinite;
+}
+
+#video-floating-btn svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform 0.3s ease;
+}
+
+#video-floating-btn:hover svg {
+  transform: scale(1);
+}
+
+/* 资源列表面板 - 增加 flex 布局以支持预览固定在顶部 */
+#video-resource-panel {
+  display: none;
+  flex-direction: column;
+  position: fixed;
+  left: 20px;
+  bottom: 84px;
+  width: 420px;
+  max-height: 80vh;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
+    0 0 40px rgba(23, 160, 184, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  z-index: 99998;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform-origin: left bottom;
+}
+
+#video-resource-panel.visible {
+  display: flex;
+  transform: translateY(0) scale(1);
+}
+
+#preview-wrapper {
+  width: 100%;
+  position: relative;
+  flex-shrink: 0;
+  padding: 15px;
+  border-bottom: none;
+}
+
+#artplayer-container {
+  width: 100%;
+  aspect-ratio: 16/9;
+  min-height: 200px;
+  display: block;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+#video-resource-panel.visible {
+  display: flex;
+}
+
+
+#close-preview {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  color: white;
+  background: rgba(23, 160, 184, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(23, 160, 184, 0.4);
+  letter-spacing: 0.5px;
+}
+
+#close-preview:hover {
+  background: rgba(23, 160, 184, 0.95);
+  transform: scale(1);
+  box-shadow: 0 4px 15px rgba(23, 160, 184, 0.4);
+}
+
+.panel-header {
+  text-align: center;
+}
+
+/* 列表滚动区域 */
+.resource-list-container {
+  overflow-y: auto;
+  flex: 1;
+  border-top: none;
+  background: transparent;
+  /* backdrop-filter: blur(0); 
+  -webkit-backdrop-filter: blur(0); */
+}
+
+/* 自定义滚动条样式 */
+.resource-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.resource-list-container::-webkit-scrollbar-track {
+  background: rgba(23, 160, 184, 0.05);
+  border-radius: 3px;
+}
+
+.resource-list-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(23, 160, 184, 0.5), rgba(26, 188, 156, 0.5));
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.resource-list-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(23, 160, 184, 0.7), rgba(26, 188, 156, 0.7));
+}
+
+.resource-item {
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(23, 160, 184, 0.06);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.resource-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(23, 160, 184, 0.8), rgba(26, 188, 156, 0.8));
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.resource-item.selected::before {
+  transform: scaleY(1);
+}
+
+.resource-item:hover::before {
+  transform: scaleY(1);
+}
+
+.resource-item:hover {
+  background: rgba(23, 160, 184, 0.04);
+  transform: translateX(0);
+}
+
+.resource-title {
+  font-size: 14px;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.resource-info {
+  font-size: 12px;
+  color: #7f8c8d;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 400;
+}
+
+.mini-download-btn {
+  background: linear-gradient(135deg, rgba(23, 160, 184, 0.9), rgba(26, 188, 156, 0.9));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 5px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(23, 160, 184, 0.3);
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mini-download-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.mini-download-btn:hover::before {
+  left: 0;
+}
+
+.mini-download-btn:hover {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(23, 160, 184, 0.3);
+  background: linear-gradient(135deg, rgba(23, 160, 184, 0.9), rgba(26, 188, 156, 0.9));
+}
+
+.mini-download-btn:active {
+  transform: translateY(0);
+}
+
+#speed-tip {
+  position: absolute;
+  top: 15%;
+  /* 放在偏上方，不挡字幕 */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  /* 半透明黑 */
+  color: #fff;
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  display: none;
+  align-items: center;
+  pointer-events: none;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#speed-tip::before {
+  content: "倍速播放中";
+  margin-right: 8px;
+  color: #1abc9c;
+  letter-spacing: -2px;
+}
+
+/* 面板出现动画 */
+@keyframes panel-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+#video-resource-panel.visible {
+  animation: panel-slide-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* 资源列表项出现动画 */
+@keyframes item-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.resource-item {
+  animation: item-fade-in 0.3s ease forwards;
+}
+
+.resource-item:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.resource-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.resource-item:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.resource-item:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.resource-item:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.resource-item:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+.resource-item:nth-child(7) {
+  animation-delay: 0.35s;
+}
+
+.resource-item:nth-child(8) {
+  animation-delay: 0.4s;
+}
+
+.resource-item:nth-child(9) {
+  animation-delay: 0.45s;
+}
+
+.resource-item:nth-child(10) {
+  animation-delay: 0.5s;
+}

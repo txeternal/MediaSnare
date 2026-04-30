@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>视频嗅探器</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+        sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 260px;
+      min-height: 180px;
+      background: linear-gradient(135deg, 
+        rgba(23, 160, 184, 0.12), 
+        rgba(26, 188, 156, 0.1),
+        rgba(155, 89, 182, 0.08),
+        rgba(241, 196, 15, 0.07),
+        rgba(231, 76, 60, 0.06),
+        rgba(52, 152, 219, 0.09)
+      );
+      backdrop-filter: blur(25px) saturate(160%);
+      -webkit-backdrop-filter: blur(25px) saturate(160%);
+      padding: 16px;
+    }
+
+    .header{
+      text-align: center;
+      padding-bottom: 16px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(23, 160, 184, 0.1);
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #2c3e50;
+      letter-spacing: 0.5px;
+    }
+
+    .header-subtitle {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-top: 4px;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      /* background: rgba(255, 255, 255, 0.85); */
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .menu-item:hover {
+      box-shadow: 0 8px 25px rgba(23, 160, 184, 0.15),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      /* background: rgba(255, 255, 255, 0.95); */
+    }
+
+    .menu-item:active {
+      transform: translateY(0);
+    }
+
+    .menu-item-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .menu-item-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(23, 160, 184, 0.1), rgba(26, 188, 156, 0.1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .menu-item-icon svg {
+      width: 12px;
+      height: 12px;
+      fill: #17a0b8;
+    }
+
+    .menu-item-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: #2c3e50;
+      user-select: none;
+    }
+
+    .menu-item-description {
+      font-size: 11px;
+      color: #95a5a6;
+      margin-top: 2px;
+    }
+
+    /* ===== Switch ===== */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      /* background: linear-gradient(135deg, #e8eef2, #d5dde3); */
+      border-radius: 26px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1),
+                  0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      top: 3px;
+      /* background: linear-gradient(135deg, #ffffff, #f0f4f8); */
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    input:checked + .slider {
+      background: linear-gradient(135deg, rgba(23, 160, 184, 0.9), rgba(26, 188, 156, 0.9));
+      box-shadow: 0 4px 15px rgba(23, 160, 184, 0.35),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    input:checked + .slider::before {
+      transform: translateX(20px);
+      background: white;
+      box-shadow: 0 3px 8px rgba(23, 160, 184, 0.4);
+    }
+
+    .footer {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(23, 160, 184, 0.1);
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 11px;
+      color: #bdc3c7;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="header-title">视频资源嗅探器</div>
+    <div class="header-subtitle">检测网页视频资源</div>
+  </div>
+
+  <div class="menu">
+    <div class="menu-item">
+      <div class="menu-item-content">
+        <div class="menu-item-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="menu-item-text">在此站点暂停</div>
+          <div class="menu-item-description">仅当前网站停止检测</div>
+        </div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="pause-this-tab" />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-content">
+        <div class="menu-item-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="menu-item-text">在所有站点暂停</div>
+          <div class="menu-item-description">全局停止视频检测</div>
+        </div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="pause-all-tabs" />
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">MediaSnare v1.0.1</div>
+  </div>
+
+  <script src="js/popup.js"></script>
+</body>
+</html>

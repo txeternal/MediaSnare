@@ -1,0 +1,180 @@
+// 在 Background.js 开头加入
+let pausedHosts = [];
+let isPausedAll = false;
+
+// 初始化时从本地存储同步一下状态
+chrome.storage.local.get(['pausedHosts', 'isPausedAll'], (data) => {
+  pausedHosts = data.pausedHosts || [];
+  isPausedAll = data.isPausedAll || false;
+});
+
+// 监听 storage 变化，实时更新 background 变量
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.pausedHosts) pausedHosts = changes.pausedHosts.newValue;
+  if (changes.isPausedAll) isPausedAll = changes.isPausedAll.newValue;
+});
+
+
+
+// ================== 资源存储（按 tabId 分组） ==================
+const videoResources = new Map();
+
+// ================== MIME & 扩展名 ==================
+const VIDEO_MIME_TYPES = new Set([
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-msvideo',
+  'video/x-flv',
+  'video/mpeg'
+]);
+
+const VIDEO_EXTENSIONS = new Set([
+  'mp4', 'webm', 'mov', 'avi', 'flv', 'mkv'
+]);
+
+// ================== 请求拦截 ==================
+chrome.webRequest.onHeadersReceived.addListener(
+  async (details) => {
+    const { tabId, url, responseHeaders } = details;
+    if (tabId === -1) return;
+    if (isPausedAll) return;
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    if (!tab?.url) return;
+
+    let pageHost;
+    try {
+      pageHost = new URL(tab.url).hostname;
+    } catch {
+      return;
+    }
+
+    if (pausedHosts.includes(pageHost)) {
+      console.log('本站点已暂停嗅探:', pageHost);
+      return;
+    }
+    
+    let mimeType = '';
+    let size = 0;
+
+    for (const h of responseHeaders || []) {
+      const name = h.name.toLowerCase();
+      if (name === 'content-type') {
+        mimeType = h.value.split(';')[0];
+      }
+      if (name === 'content-length') {
+        size = parseInt(h.value, 10) || 0;
+      }
+    }
+
+    let ext = '';
+    try {
+      ext = new URL(url).pathname.split('.').pop().toLowerCase();
+    } catch {
+      return;
+    }
+
+    // ================== 类型判断 ==================
+    const isM3U8 =
+      ext === 'm3u8' ||
+      mimeType === 'application/x-mpegurl' ||
+      mimeType === 'application/vnd.apple.mpegurl';
+
+    const isTS =
+      ext === 'ts' ||
+      mimeType === 'video/mp2t';
+
+    const isNormalVideo =
+      !isM3U8 &&
+      !isTS &&
+      (VIDEO_MIME_TYPES.has(mimeType) || VIDEO_EXTENSIONS.has(ext));
+
+    // ================== ts：直接忽略 ==================
+    if (isTS) {
+      return;
+    }
+
+    if (!videoResources.has(tabId)) {
+      videoResources.set(tabId, []);
+    }
+
+    const resources = videoResources.get(tabId);
+
+    // ================== m3u8：单独标记 ==================
+    if (isM3U8) {
+      if (resources.some(r => r.isM3U8 && r.url === url)) return;
+
+      const resource = {
+        url,
+        ext: 'm3u8',
+        mimeType,
+        size: 0,
+        isM3U8: true,
+        category: 'hls'
+      };
+
+      resources.push(resource);
+
+      chrome.tabs.sendMessage(tabId, {
+        type: 'NEW_VIDEO_RESOURCE',
+        resource
+      }).catch(() => { });
+      return;
+    }
+
+    // ================== 普通视频 ==================
+    if (isNormalVideo) {
+      if (resources.some(r => r.url === url)) return;
+
+      const resource = {
+        url,
+        ext,
+        mimeType,
+        size,
+        isM3U8: false,
+        category: 'file'
+      };
+
+      resources.push(resource);
+
+      chrome.tabs.sendMessage(tabId, {
+        type: 'NEW_VIDEO_RESOURCE',
+        resource
+      }).catch(() => { });
+    }
+  },
+  { urls: ['<all_urls>'] },
+  ['responseHeaders', 'extraHeaders']
+);
+
+// ================== tab 关闭清理 ==================
+chrome.tabs.onRemoved.addListener((tabId) => {
+  videoResources.delete(tabId);
+});
+
+// ================== content-script 主动请求 ==================
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+
+  if (msg.type === 'GET_VIDEO_RESOURCES' && sender.tab?.id !== undefined) {
+    sendResponse({
+      resources: videoResources.get(sender.tab.id) || []
+    });
+  }
+});
+
+// 监听popup发送的状态变化消息，广播给所有标签页
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'STATE_CHANGED') {
+    // 通知所有标签页的content-script更新暂停状态
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'PAUSE_STATE_CHANGED',
+          isPausedAll: msg.isPausedAll,
+          pausedHosts: pausedHosts // 同步最新的暂停站点列表
+        }).catch(() => {});
+      });
+    });
+    sendResponse({ success: true });
+  }
+});
